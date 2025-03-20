@@ -1,7 +1,7 @@
 import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options
 import random
-import config
+from ..config.config import config
 import os
 import ssl
 import platform

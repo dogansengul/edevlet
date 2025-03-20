@@ -13,15 +13,36 @@ venv.bak/
 *.egg-info/
 dist/
 build/
-downloads/
 
 # IDE files
 .idea/
 .vscode/
 *.swp
+*.swo
 
 # Logs
 *.log
+logs/
+*.png
+*.jpg
+*.jpeg
 
-# Other files
-*.DS_Store
+# Project specific
+downloads/
+error_screenshots/
+temp/
+*.pem
+*.key
+*.crt
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Local development settings
+local_settings.py

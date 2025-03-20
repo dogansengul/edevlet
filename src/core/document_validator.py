@@ -2,8 +2,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-import config
-from human_behavior import HumanBehaviorSimulator
+from ..config.config import config
+from .human_behavior import HumanBehaviorSimulator
 
 class DocumentValidator:
     """E-Devlet belge doğrulama işlemlerini yöneten sınıf"""
@@ -160,14 +160,40 @@ class DocumentValidator:
         """Onay kutusunu işaretle ve devam et"""
         try:
             print("Checkbox bulunuyor ve işaretleniyor...")
-            checkbox = self.human.wait_for_clickable(By.ID, "chkOnay")
-            self.human.human_like_click(checkbox)
+            # Sayfanın tamamen yüklenmesini bekle
+            self.human.random_sleep(2, 3)
+            
+            # Önce sayfayı yukarı kaydır
+            self.driver.execute_script("window.scrollTo(0, 0);")
+            self.human.random_sleep(1, 2)
+            
+            # Checkbox'ı bulmayı dene
+            checkbox = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.ID, "chkOnay"))
+            )
+            
+            # Checkbox'a scroll yap
+            self.human.scroll_to_element(checkbox)
+            self.human.random_sleep(1, 2)
+            
+            # JavaScript ile tıkla (daha güvenilir)
+            self.driver.execute_script("arguments[0].click();", checkbox)
             print("Checkbox işaretlendi.")
             
             print("Devam Et butonuna tekrar tıklanıyor...")
             self.human.random_sleep(1, 2)
-            submit_button = self.human.wait_for_clickable(By.CSS_SELECTOR, "input.submitButton")
-            self.human.human_like_click(submit_button)
+            
+            # Submit butonunu bul
+            submit_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "input.submitButton"))
+            )
+            
+            # Butona scroll yap
+            self.human.scroll_to_element(submit_button)
+            self.human.random_sleep(1, 2)
+            
+            # JavaScript ile tıkla
+            self.driver.execute_script("arguments[0].click();", submit_button)
             print("Devam Et butonuna tekrar tıklandı.")
             
             self.human.random_sleep(2, 4)
@@ -177,10 +203,32 @@ class DocumentValidator:
             # Alternatif yöntem dene
             try:
                 print("Alternatif onay işlemi yöntemi deneniyor...")
-                checkbox = self.driver.find_element(By.ID, "chkOnay")
-                self.driver.execute_script("arguments[0].click();", checkbox)
+                # Sayfanın tamamen yüklenmesini bekle
+                self.human.random_sleep(3, 5)
                 
-                submit_button = self.driver.find_element(By.CSS_SELECTOR, "input.submitButton")
+                # Checkbox'ı farklı yöntemlerle bulmayı dene
+                try:
+                    checkbox = self.driver.find_element(By.ID, "chkOnay")
+                except:
+                    try:
+                        checkbox = self.driver.find_element(By.NAME, "chkOnay")
+                    except:
+                        checkbox = self.driver.find_element(By.CSS_SELECTOR, "input[type='checkbox']")
+                
+                # JavaScript ile tıkla
+                self.driver.execute_script("arguments[0].click();", checkbox)
+                self.human.random_sleep(1, 2)
+                
+                # Submit butonunu farklı yöntemlerle bulmayı dene
+                try:
+                    submit_button = self.driver.find_element(By.CSS_SELECTOR, "input.submitButton")
+                except:
+                    try:
+                        submit_button = self.driver.find_element(By.CSS_SELECTOR, "input[type='submit']")
+                    except:
+                        submit_button = self.driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+                
+                # JavaScript ile tıkla
                 self.driver.execute_script("arguments[0].click();", submit_button)
                 
                 self.human.random_sleep(2, 4)

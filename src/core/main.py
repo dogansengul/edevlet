@@ -1,11 +1,11 @@
-import config
 import platform
 import ssl
 import os
 import certifi
-from driver_manager import DriverManager
-from document_validator import DocumentValidator
-from file_manager import FileManager
+from ..config.config import config
+from ..utils.driver_manager import DriverManager
+from .document_validator import DocumentValidator
+from ..utils.file_manager import FileManager
 
 # SSL sertifika doğrulama hatasını çözmek için
 if platform.system() == 'Darwin':  # macOS için

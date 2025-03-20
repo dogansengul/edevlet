@@ -1,6 +1,6 @@
 import os
 import time
-import config
+from ..config.config import config
 import platform
 import ssl
 import requests

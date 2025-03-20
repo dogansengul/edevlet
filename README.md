@@ -9,18 +9,37 @@ Bu proje, E-Devlet üzerinden belge doğrulama ve indirme işlemlerini otomatikl
 - Doğrulanan belgeleri otomatik indirme
 - İndirilen dosyaları yönetme ve raporlama
 - İnsan benzeri davranışlar ile captcha korumasını aşma
-- Proxy ve User-Agent rotasyonu ile IP engellemelerini önleme
+- Gelişmiş hata yönetimi ve alternatif yöntemler
+- Akıllı fare hareketleri ve sayfa etkileşimleri
 
-## Dosya Yapısı
+## Proje Yapısı
 
-- `config.py`: Yapılandırma ayarları ve sabitler
-- `driver_manager.py`: WebDriver kurulumu ve yönetimi
-- `document_validator.py`: Belge doğrulama işlemleri
-- `file_manager.py`: Dosya indirme ve yönetme işlemleri
-- `main.py`: Ana program akışı
-- `human_behavior.py`: İnsan benzeri davranışları simüle eden sınıf
-- `install_certificates.py`: macOS için SSL sertifikalarını yükleyen betik
-- `fix_macos_ssl.py`: macOS için SSL sertifika sorununu çözen betik
+```
+edevlet-automazition/
+├── src/
+│   ├── core/           # Ana uygulama mantığı
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── edevlet.py
+│   │   ├── document_validator.py
+│   │   └── human_behavior.py
+│   ├── utils/          # Yardımcı fonksiyonlar
+│   │   ├── __init__.py
+│   │   ├── driver_manager.py
+│   │   ├── file_manager.py
+│   │   ├── install_certificates.py
+│   │   └── fix_macos_ssl.py
+│   ├── config/         # Yapılandırma dosyaları
+│   │   ├── __init__.py
+│   │   └── config.py
+│   ├── screenshots/    # Hata ekran görüntüleri
+│   └── logs/          # Log dosyaları
+├── downloads/         # İndirilen dosyalar
+├── .env              # Hassas bilgiler (git'e gönderilmez)
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
 
 ## Gereksinimler
 
@@ -28,80 +47,131 @@ Bu proje, E-Devlet üzerinden belge doğrulama ve indirme işlemlerini otomatikl
 - Selenium
 - undetected-chromedriver
 - Chrome WebDriver
+- python-dotenv
+- fake-useragent
+- certifi
+- requests
 
 ## Kurulum
 
-1. Gerekli paketleri yükleyin:
+1. Projeyi klonlayın:
 
+   ```bash
+   git clone https://github.com/kullanici/edevlet-automazition.git
+   cd edevlet-automazition
    ```
+
+2. Gerekli paketleri yükleyin:
+
+   ```bash
    pip install -r requirements.txt
    ```
 
-2. `.env` dosyasını düzenleyin ve proxy bilgilerinizi ekleyin.
+3. `.env` dosyasını oluşturun ve gerekli bilgileri ekleyin:
 
-3. macOS kullanıcıları için SSL sertifika sorununu çözmek için:
-
+   ```env
+   BARCODE_NUMBER=your_barcode_number
+   TC_KIMLIK_NO=your_tc_kimlik_no
    ```
-   python fix_macos_ssl.py
+
+4. macOS kullanıcıları için SSL sertifika sorununu çözmek için:
+   ```bash
+   python src/utils/fix_macos_ssl.py
    ```
 
 ## Kullanım
 
-Varsayılan değerlerle çalıştırmak için:
-
-```bash
-python main.py
-```
-
-Özel parametrelerle çalıştırmak için `main.py` dosyasını düzenleyin veya kodu şu şekilde kullanın:
-
-```python
-from main import validate_and_download_document
-
-downloaded_files = validate_and_download_document(
-    barcode="BARKOD_NUMARASI",
-    tc_kimlik_no="TC_KIMLIK_NO"
-)
-```
-
-## macOS SSL Sertifika Sorunu Çözümü
-
-macOS'ta SSL sertifika doğrulama hatası alıyorsanız, aşağıdaki adımları izleyin:
-
-1. SSL sertifikalarını yükleyin:
+1. Varsayılan değerlerle çalıştırmak için:
 
    ```bash
-   python fix_macos_ssl.py
+   python -m src.core.main
    ```
 
-2. Veya manuel olarak şu komutu çalıştırın:
+2. Özel parametrelerle programatik kullanım:
 
-   ```bash
-   cd /Applications/Python 3.x/ && ./Install\ Certificates.command
+   ```python
+   from src.core.main import validate_and_download_document
+
+   result = validate_and_download_document(
+       barcode="BARKOD_NUMARASI",
+       tc_kimlik_no="TC_KIMLIK_NO"
+   )
+
+   if result["success"]:
+       print(f"İndirilen dosyalar: {result['files']}")
+   else:
+       print(f"Hata: {result['error']['message']}")
    ```
 
-3. Ortam değişkenlerini ayarlayın:
+## Özellikler ve Modüller
 
-   ```bash
-   export SSL_CERT_FILE=/path/to/cacert.pem
-   export REQUESTS_CA_BUNDLE=/path/to/cacert.pem
-   ```
+### Core Modülleri
 
-4. Bu değişkenleri kalıcı yapmak için `.zshrc` veya `.bash_profile` dosyanıza ekleyin.
+- `main.py`: Ana program akışı ve koordinasyonu
+- `document_validator.py`: Belge doğrulama işlemleri ve form yönetimi
+- `human_behavior.py`: İnsan benzeri davranış simülasyonu ve bot tespitini önleme
+- `edevlet.py`: E-Devlet servisleri ile etkileşim
+
+### Utility Modülleri
+
+- `driver_manager.py`: WebDriver kurulumu ve yönetimi
+- `file_manager.py`: Dosya indirme ve yönetme işlemleri
+- `install_certificates.py`: SSL sertifika yükleme
+- `fix_macos_ssl.py`: macOS SSL sorunları için çözümler
+
+### Yapılandırma
+
+- `config.py`: Merkezi yapılandırma ve sabitler
+- `.env`: Hassas bilgiler ve kişisel ayarlar
+
+## Güvenlik Özellikleri
+
+- Hassas bilgiler `.env` dosyasında saklanır ve git'e gönderilmez
+- SSL sertifika doğrulama desteği
+- İnsan benzeri davranışlar ile bot tespitini önleme
+- Akıllı fare hareketleri ve sayfa etkileşimleri
+- Alternatif yöntemler ile hata durumlarını yönetme
 
 ## Sorun Giderme
 
 ### SSL Sertifika Hatası
 
 ```
-[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate
+[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed
 ```
 
-Bu hata, SSL sertifikalarının doğrulanamamasından kaynaklanır. Çözüm için:
+Çözüm:
 
-1. `fix_macos_ssl.py` betiğini çalıştırın.
-2. Veya `driver_manager.py` dosyasında SSL doğrulamasını devre dışı bırakın.
+1. SSL sertifikalarını yükleyin:
+   ```bash
+   python src/utils/fix_macos_ssl.py
+   ```
+2. Veya ortam değişkenlerini ayarlayın:
+   ```bash
+   export SSL_CERT_FILE=/path/to/cacert.pem
+   export REQUESTS_CA_BUNDLE=/path/to/cacert.pem
+   ```
 
-### Proxy Hatası
+### Element Bulunamama Hatası
 
-Proxy bağlantı hatası alıyorsanız, `.env` dosyasındaki proxy listesini güncelleyin veya proxy kullanımını devre dışı bırakın.
+```
+NoSuchElementException: Message: no such element
+```
+
+Çözüm:
+
+1. Sayfanın tamamen yüklenmesini bekleyin
+2. Element ID'lerinin doğru olduğunu kontrol edin
+3. Alternatif element bulma yöntemlerini kullanın
+
+## Katkıda Bulunma
+
+1. Bu depoyu fork edin
+2. Yeni bir branch oluşturun (`git checkout -b feature/amazing_feature`)
+3. Değişikliklerinizi commit edin (`git commit -m 'Add amazing feature'`)
+4. Branch'inizi push edin (`git push origin feature/amazing_feature`)
+5. Pull Request oluşturun
+
+## Lisans
+
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.

@@ -4,13 +4,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import random
 import time
-import config
+from ..config.config import config
 
 class HumanBehaviorSimulator:
     def __init__(self, driver):
         self.driver = driver
         self.actions = ActionChains(driver)
         self.wait = WebDriverWait(driver, 10)
+        self.last_mouse_x = 0
+        self.last_mouse_y = 0
     
     def random_sleep(self, min_time=None, max_time=None):
         """Rastgele bir süre bekle"""
@@ -120,15 +122,42 @@ class HumanBehaviorSimulator:
             viewport_width = self.driver.execute_script("return window.innerWidth;")
             viewport_height = self.driver.execute_script("return window.innerHeight;")
             
-            x = random.randint(0, viewport_width - 100)  # Sınırları aşmamak için marj bırak
-            y = random.randint(0, viewport_height - 100)  # Sınırları aşmamak için marj bırak
+            # Mevcut fare konumundan göreceli hareket
+            max_move = 200  # Maksimum hareket mesafesi
+            x_offset = random.randint(-max_move, max_move)
+            y_offset = random.randint(-max_move, max_move)
             
-            self.actions = ActionChains(self.driver)  # Yeni bir ActionChains oluştur
-            self.actions.move_by_offset(x, y)
-            self.actions.perform()
+            # Yeni konumun viewport sınırları içinde kalmasını sağla
+            new_x = max(0, min(viewport_width - 10, self.last_mouse_x + x_offset))
+            new_y = max(0, min(viewport_height - 10, self.last_mouse_y + y_offset))
+            
+            # Göreceli hareketi hesapla
+            x_move = new_x - self.last_mouse_x
+            y_move = new_y - self.last_mouse_y
+            
+            # Fareyi hareket ettir
+            try:
+                self.actions = ActionChains(self.driver)  # Yeni bir ActionChains oluştur
+                self.actions.move_by_offset(x_move, y_move)
+                self.actions.perform()
+                
+                # Son konumu güncelle
+                self.last_mouse_x = new_x
+                self.last_mouse_y = new_y
+            except:
+                # Hareket başarısız olursa fareyi merkeze al
+                self.actions = ActionChains(self.driver)
+                self.actions.move_to_element(self.driver.find_element(By.TAG_NAME, "body"))
+                self.actions.perform()
+                self.last_mouse_x = viewport_width // 2
+                self.last_mouse_y = viewport_height // 2
+            
             self.random_sleep(0.1, 0.3)
         except Exception as e:
             print(f"Fare hareketi sırasında hata: {str(e)}")
+            # Hata durumunda fareyi sıfırla
+            self.last_mouse_x = 0
+            self.last_mouse_y = 0
     
     def simulate_human_behavior(self):
         """Genel insan benzeri davranışları simüle et"""
