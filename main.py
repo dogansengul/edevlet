@@ -1,7 +1,25 @@
 import config
+import platform
+import ssl
+import os
+import certifi
 from driver_manager import DriverManager
 from document_validator import DocumentValidator
 from file_manager import FileManager
+
+# SSL sertifika doğrulama hatasını çözmek için
+if platform.system() == 'Darwin':  # macOS için
+    # SSL doğrulamasını devre dışı bırak
+    ssl._create_default_https_context = ssl._create_unverified_context
+    
+    # Certifi sertifika yolunu al ve ortam değişkenlerine ekle
+    try:
+        certifi_path = certifi.where()
+        os.environ['SSL_CERT_FILE'] = certifi_path
+        os.environ['REQUESTS_CA_BUNDLE'] = certifi_path
+        print(f"SSL sertifikaları ayarlandı: {certifi_path}")
+    except Exception as e:
+        print(f"Certifi sertifika ayarlama hatası: {str(e)}")
 
 def validate_and_download_document(barcode=None, tc_kimlik_no=None):
     """Belge doğrulama ve indirme işlemini gerçekleştir"""
@@ -15,10 +33,24 @@ def validate_and_download_document(barcode=None, tc_kimlik_no=None):
         # WebDriver'ı başlat
         driver = DriverManager.setup_driver()
         
+        # Tarayıcı penceresini maksimize et
+        driver.maximize_window()
+        
         # Belge doğrulama işlemleri
         validator = DocumentValidator(driver)
         validator.navigate_to_validation_page()
-        validator.enter_barcode(barcode)
+        
+        # Barkod girişi
+        if not validator.enter_barcode(barcode):
+            print("Barkod girişi başarısız oldu.")
+            return {
+                "success": False,
+                "error": {
+                    "error_type": "barcode_input_error",
+                    "message": "Barkod girişi yapılamadı."
+                },
+                "files": []
+            }
         
         # TC Kimlik No doğrulama sonucunu kontrol et
         tc_validation_result = validator.enter_tc_kimlik_no(tc_kimlik_no)
@@ -32,7 +64,17 @@ def validate_and_download_document(barcode=None, tc_kimlik_no=None):
                 "files": []
             }
         
-        validator.accept_terms()
+        # Onay işlemi
+        if not validator.accept_terms():
+            print("Onay işlemi başarısız oldu.")
+            return {
+                "success": False,
+                "error": {
+                    "error_type": "terms_acceptance_error",
+                    "message": "Onay işlemi yapılamadı."
+                },
+                "files": []
+            }
         
         # Doğrulama başarılı mı kontrol et
         if validator.is_validation_successful():
