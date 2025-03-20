@@ -43,10 +43,6 @@ class Config:
     # E-Devlet URL'leri
     EDEVLET_BELGE_DOGRULAMA_URL = "https://www.turkiye.gov.tr/belge-dogrulama"
 
-    # Belge bilgileri
-    BARCODE_NUMBER = "ADB02978118577"
-    TC_KIMLIK_NO = "23327276170"
-
     # Sistem bilgileri
     SYSTEM_INFO = f"İşletim sistemi: {platform.system()} {platform.machine()}"
 
