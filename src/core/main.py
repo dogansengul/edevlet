@@ -4,7 +4,7 @@ import os
 import certifi
 import csv
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from ..config.config import config
 from ..utils.driver_manager import DriverManager
 from .document_validator import DocumentValidator
@@ -95,15 +95,15 @@ def log_operation(tc_kimlik_no, barcode, result):
     except Exception as e:
         print(f"Log dosyası oluşturma hatası: {str(e)}")
 
-def process_csv_file(csv_file_path):
-    """CSV dosyasından TC kimlik ve barkod numaralarını okuyup işlemleri gerçekleştir"""
-    results = []
-    
+def process_csv_row(csv_file_path, row_index):
+    """CSV dosyasından belirli bir satırı okuyup işlemi gerçekleştir"""
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as file:
             csv_reader = csv.DictReader(file)
+            rows = list(csv_reader)
             
-            for row in csv_reader:
+            if row_index < len(rows):
+                row = rows[row_index]
                 tc_kimlik_no = row.get('tc_kimlik_no')
                 barcode = row.get('barcode')
                 
@@ -111,14 +111,29 @@ def process_csv_file(csv_file_path):
                     print(f"\nİşleniyor: TC Kimlik No: {tc_kimlik_no}, Barkod: {barcode}")
                     result = validate_and_download_document(barcode, tc_kimlik_no)
                     log_operation(tc_kimlik_no, barcode, result)
-                    results.append(result)
+                    return result, len(rows)
                 else:
                     print(f"Hatalı satır: TC Kimlik No veya Barkod eksik")
-        
-        return results
+                    return {
+                        "success": False,
+                        "error": {
+                            "error_type": "missing_data",
+                            "message": "TC Kimlik No veya Barkod eksik"
+                        },
+                        "files": []
+                    }, len(rows)
+            else:
+                return None, len(rows)
     except Exception as e:
         print(f"CSV dosyası okuma hatası: {str(e)}")
-        return []
+        return {
+            "success": False,
+            "error": {
+                "error_type": "csv_read_error",
+                "message": str(e)
+            },
+            "files": []
+        }, 0
 
 def validate_and_download_document(barcode=None, tc_kimlik_no=None):
     """Belge doğrulama ve indirme işlemini gerçekleştir"""
@@ -248,18 +263,56 @@ if __name__ == "__main__":
     # Gerekli dizinleri oluştur
     setup_directories()
     
-    # CSV dosyasından TC kimlik ve barkod numaralarını oku
-    csv_file_path = os.path.join(os.getcwd(), "test_data.csv")
-    if os.path.exists(csv_file_path):
-        print("CSV dosyasından veriler okunuyor...")
-        results = process_csv_file(csv_file_path)
-        
-        # Sonuçları özetle
-        success_count = sum(1 for r in results if r["success"])
-        print(f"\nİşlem tamamlandı!")
-        print(f"Toplam işlem sayısı: {len(results)}")
-        print(f"Başarılı işlem sayısı: {success_count}")
-        print(f"Başarısız işlem sayısı: {len(results) - success_count}")
-    else:
-        print(f"CSV dosyası bulunamadı: {csv_file_path}")
-        print("Lütfen 'test_data.csv' dosyasını oluşturun ve içine 'tc_kimlik_no' ve 'barcode' sütunlarını ekleyin.") 
+    # Sıradaki işlenecek satırı izle
+    current_row_index = 0
+    
+    # Devamlı çalışacak bir döngü oluştur
+    try:
+        while True:
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"\n[{current_time}] İşlem başlatılıyor...")
+            
+            # CSV dosyasından TC kimlik ve barkod numaralarını oku
+            csv_file_path = os.path.join(os.getcwd(), "test_data.csv")
+            
+            if os.path.exists(csv_file_path):
+                print(f"CSV dosyasından {current_row_index+1}. satır okunuyor...")
+                
+                # Bir sonraki satırı işle
+                result, total_rows = process_csv_row(csv_file_path, current_row_index)
+                
+                if result is not None:
+                    # İşlem sonucunu göster
+                    print(f"\nİşlem tamamlandı: {'Başarılı' if result['success'] else 'Başarısız'}")
+                    
+                    # Sonraki satıra geç
+                    current_row_index += 1
+                    
+                    # Eğer son satıra geldiyse başa dön
+                    if current_row_index >= total_rows:
+                        print(f"\nCSV dosyasındaki tüm satırlar işlendi. Başa dönülüyor...")
+                        current_row_index = 0
+                else:
+                    print(f"\nCSV dosyasında işlenecek satır kalmadı. Başa dönülüyor...")
+                    current_row_index = 0
+            else:
+                print(f"CSV dosyası bulunamadı: {csv_file_path}")
+                print("Lütfen 'test_data.csv' dosyasını oluşturun ve içine 'tc_kimlik_no' ve 'barcode' sütunlarını ekleyin.")
+            
+            # 2 saat bekle
+            wait_time_seconds = 2 * 60 * 60  # 2 saat = 7200 saniye
+            next_run_time = datetime.now() + timedelta(seconds=wait_time_seconds)
+            print(f"\n[{current_time}] İşlem tamamlandı. Sonraki çalışma zamanı: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            if current_row_index == 0:
+                print(f"2 saat ({wait_time_seconds} saniye) bekleniyor... Süre sonunda CSV dosyasının ilk satırından tekrar başlanacak.")
+            else:
+                print(f"2 saat ({wait_time_seconds} saniye) bekleniyor... Süre sonunda CSV dosyasının {current_row_index+1}. satırı işlenecek.")
+            
+            time.sleep(wait_time_seconds)
+    
+    except KeyboardInterrupt:
+        print("\nProgram kullanıcı tarafından durduruldu.")
+    except Exception as e:
+        print(f"\nHata oluştu: {str(e)}")
+        raise 
