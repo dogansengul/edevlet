@@ -35,6 +35,11 @@ temp/
 *.key
 *.crt
 
+# Event-driven queue files
+events.json
+processed_events.log
+failed_updates.json
+
 # System files
 .DS_Store
 Thumbs.db
