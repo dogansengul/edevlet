@@ -1,6 +1,7 @@
 # Byte-compiled files
 __pycache__/
 *.py[cod]
+*$py.class
 
 # Distribution / packaging
 .Python
@@ -22,23 +23,45 @@ build/
 
 # Logs
 *.log
-logs/
+logs/*.log
 *.png
 *.jpg
 *.jpeg
 
 # Project specific
 downloads/
+downloads/*.pdf
+screenshots/*.png
+screenshots/*.jpg
 error_screenshots/
 temp/
 *.pem
 *.key
 *.crt
 
+# Database files
+*.db
+queue*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.tar.gz
+*.zip
+*.bak
+*backup*
+*old*
+
 # Event-driven queue files
 events.json
 processed_events.log
 failed_updates.json
+
+# Test files
+test_*.csv
+test_*.json
+*test*.pdf
+mock_data/
 
 # System files
 .DS_Store
@@ -51,3 +74,14 @@ ENV/
 
 # Local development settings
 local_settings.py
+config_local.py
+
+# Cache directories
+.cache/
+.pytest_cache/
+.coverage
+
+# Temporary files
+*.tmp
+*.temp
+temp_*
